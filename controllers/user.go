@@ -8,6 +8,7 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
 	"github.com/astaxie/beego/utils"
+	"github.com/gomodule/redigo/redis"
 )
 
 // UserController for insert user
@@ -59,8 +60,8 @@ func (c *UserController) HandleRegister() {
 	}
 
 	var user models.User
-	user.UserName = userName
-	user.Pwd = pwd
+	user.Name = userName
+	user.Password = pwd
 	user.Email = email
 	o := orm.NewOrm()
 	uid, err := o.Insert(&user)
@@ -96,8 +97,8 @@ func (c *UserController) HandleActiveUser() {
 	}
 	beego.Info("GetUid:: ", uid)
 	var user models.User
-	user.Uid = uid
-	user.Active = 1
+	user.Id = uid
+	user.Active = true
 	o := orm.NewOrm()
 	_, err = o.Update(&user)
 	if err != nil {
@@ -139,15 +140,15 @@ func (c *UserController) HandleLogin() {
 	}
 
 	var user models.User
-	user.UserName = userName
+	user.Name = userName
 	o := orm.NewOrm()
-	err := o.Read(&user, "UserName")
+	err := o.Read(&user, "Name")
 	if err != nil {
 		beego.Error("HandleLogin:: read user fail", err)
 		c.TplName = "login.html"
 		return
 	}
-	if user.Pwd != pwd {
+	if user.Password != pwd {
 		beego.Error("HandleLogin:: pwd not equal")
 		c.TplName = "login.html"
 		return
@@ -175,11 +176,40 @@ func (c *UserController) HandleLogout() {
 // ShowUserInfo 用户中心:: member info
 func (c *UserController) ShowUserInfo() {
 	userName := c.GetSession("username")
+
+	var goodsSKUs []models.GoodsSKU
 	if userName == nil {
 		c.Data["username"] = ""
 	} else {
 		c.Data["username"] = userName.(string)
+		//浏览历史
+		redisHost := beego.AppConfig.String("redis::redis_host")
+		redisPort := beego.AppConfig.String("redis::redis_port")
+		conn, err := redis.Dial("tcp", redisHost+":"+redisPort+"")
+
+		if err == nil {
+
+			defer conn.Close()
+			resp, err := conn.Do("lrange", "his_"+userName.(string), 0, 4)
+			res, err := redis.Ints(resp, err)
+			beego.Error(res)
+			o := orm.NewOrm()
+			for _, skuId := range res {
+
+				var goodsSKU models.GoodsSKU
+				goodsSKU.Id = skuId
+				err = o.Read(&goodsSKU)
+				if err != nil {
+					continue
+				}
+				goodsSKUs = append(goodsSKUs, goodsSKU)
+			}
+		}
+
 	}
+	c.Data["goodsSKUs"] = goodsSKUs
+	c.Data["img_url"] = beego.AppConfig.String("imgURL::img_url")
+	beego.Info("imgurl:", c.Data["img_url"])
 
 	c.Layout = "layout.html"
 	c.TplName = "user_center_info.html"
@@ -215,7 +245,7 @@ func (c *UserController) HandleAddSite() {
 	//查询用户信息 member info
 	userNameE := c.GetSession("username")
 	userName := userNameE.(string)
-	user.UserName = userName
+	user.Name = userName
 	err := o.Read(&user)
 	if err != nil {
 		beego.Error("HandleAddSite:: no user"+userNameE.(string), err)
