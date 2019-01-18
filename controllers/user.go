@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"mb2c/models"
 	"regexp"
 	"strconv"
@@ -18,6 +20,8 @@ type UserController struct {
 
 //ShowRegister show index page
 func (c *UserController) ShowRegister() {
+	//sum := sha256.Sum256([]byte("helloworda"))
+
 	c.TplName = "register.html"
 }
 
@@ -60,8 +64,15 @@ func (c *UserController) HandleRegister() {
 	}
 
 	var user models.User
+	// 密码加密
+	hash := sha256.New()
+	hash.Write([]byte(pwd))
+	md := hash.Sum(nil)
+	pwdStr := hex.EncodeToString(md)
+	//beego.Error("sha256v : ", mdStr)
+
 	user.Name = userName
-	user.Password = pwd
+	user.Password = pwdStr
 	user.Email = email
 	o := orm.NewOrm()
 	uid, err := o.Insert(&user)
@@ -138,6 +149,10 @@ func (c *UserController) HandleLogin() {
 		c.TplName = "login.html"
 		return
 	}
+	hash := sha256.New()
+	hash.Write([]byte(pwd))
+	md := hash.Sum(nil)
+	pwdStr := hex.EncodeToString(md)
 
 	var user models.User
 	user.Name = userName
@@ -148,7 +163,7 @@ func (c *UserController) HandleLogin() {
 		c.TplName = "login.html"
 		return
 	}
-	if user.Password != pwd {
+	if user.Password != pwdStr {
 		beego.Error("HandleLogin:: pwd not equal")
 		c.TplName = "login.html"
 		return
@@ -217,7 +232,33 @@ func (c *UserController) ShowUserInfo() {
 
 //ShowUserOrderList 用户中心:: order list
 func (c *UserController) ShowUserOrderList() {
+	userNameS := c.GetSession("username")
+	if userNameS == nil {
+		c.Redirect("/login", 302)
+	}
 
+	page := 1
+	pageSize := 2
+	start := (page - 1) * pageSize
+	userName := userNameS.(string)
+	var orderlist []models.OrderInfo
+	o := orm.NewOrm()
+
+	var itemOrderList []map[string]interface{}
+	o.QueryTable("OrderInfo").RelatedSel("User").Filter("User__Name", userName).Limit(pageSize, start).All(&orderlist)
+	beego.Error("orderlist:", orderlist)
+	for _, v := range orderlist {
+		var orderGoodsList []models.OrderGoods
+		o.QueryTable("OrderGoods").RelatedSel("OrderInfo", "GoodsSKU").Filter("OrderInfo__Id", v.Id).All(&orderGoodsList)
+
+		tmp := make(map[string]interface{})
+		tmp["orderInfo"] = v
+		tmp["orderGoodsList"] = orderGoodsList
+		itemOrderList = append(itemOrderList, tmp)
+	}
+
+	c.Data["imgUrl"] = beego.AppConfig.String("imgURL::img_url")
+	c.Data["orderList"] = itemOrderList
 	c.Layout = "layout.html"
 	c.TplName = "user_center_order.html"
 }
@@ -258,7 +299,7 @@ func (c *UserController) HandleAddSite() {
 	qs := o.QueryTable("receiver").RelatedSel("User").Filter("User__UserName", userName)
 	err = qs.Filter("Default", true).One(&receiverMayDefault)
 	if err == nil {
-		receiverMayDefault.Default = false
+		receiverMayDefault.IsDefault = false
 		_, err := o.Update(&receiverMayDefault)
 		if err != nil {
 			beego.Error("HandleAddSite:: updte receiverMayDefault fail,", err)

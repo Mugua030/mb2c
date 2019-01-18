@@ -18,20 +18,8 @@ type User struct {
 	Power    int    `orm:"default(0)"`
 	Active   bool   `orm:"default(false)"`
 
-	Address   []*Address   `orm:"reverse(many)"`
-	OrderInfo []*OrderInfo `orm:"reverse(many)"`
-}
-
-//Address 地址表
-type Address struct {
-	Id        int    `orm:"pk;auto"`
-	Receiver  string `orm:"size(50)"`
-	ZipCode   string `orm:"size(20)"`
-	Addr      string
-	Phone     string
-	Default   bool         `orm:"default(false)"`
-	User      *User        `orm:"rel(fk)"`
-	OrderInfo []*OrderInfo `orm:"reverse(many)"`
+	OrderInfos []*OrderInfo `orm:"reverse(many)"`
+	Receivers  []*Receiver  `orm:"reverse(many)"`
 }
 
 //Goods 商品spu表
@@ -110,7 +98,7 @@ type OrderInfo struct {
 	Id           int
 	OrderId      string        `orm:"unique"`
 	User         *User         `orm:"rel(fk)"`
-	Address      *Address      `orm:"rel(fk)"`
+	Receiver     *Receiver     `orm:"rel(fk)"`
 	PayWay       string        //支付方式   //wx ; zfb
 	PayMethod    int           //付款方式 支付方法 银行卡 信用卡
 	TotalPrice   int           //商品总价
@@ -133,19 +121,20 @@ type OrderGoods struct {
 
 //Receiver 收件人
 type Receiver struct {
-	Id      int
-	Name    string //收件人名字
-	ZipCode string //收件人邮编
-	Addr    string //地址
-	Phone   string //收件人联系方式
-	Default bool   `orm:"default(false)"` //是否未默认收件人
-	User    *User  `orm:"rel(fk)"`
+	Id        int
+	Name      string //收件人名字
+	ZipCode   string //收件人邮编
+	Addr      string //地址
+	Phone     string //收件人联系方式
+	IsDefault bool   `orm:"default(false)"` //是否未默认收件人
+	User      *User  `orm:"rel(fk)"`
 }
 
 func init() {
 	//iniconf, err := NewConfig("ini", "app.conf")
 	//beego.AppConfig.String()
 	orm.RegisterDataBase("default", "mysql", "zhouping:telnetdb@tcp(localhost:3306)/mb2c?charset=utf8")
-	orm.RegisterModel(new(User), new(Address), new(OrderGoods), new(OrderInfo), new(IndexPromotionBanner), new(IndexTypeGoodsBanner), new(IndexGoodsBanner), new(GoodsImage), new(GoodsSKU), new(GoodsType), new(Goods))
+	orm.RegisterModel(new(User), new(OrderGoods), new(OrderInfo), new(IndexPromotionBanner), new(IndexTypeGoodsBanner), new(IndexGoodsBanner), new(GoodsImage), new(GoodsSKU), new(GoodsType), new(Goods), new(Receiver))
+
 	orm.RunSyncdb("default", false, true)
 }

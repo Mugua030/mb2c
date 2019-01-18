@@ -14,3 +14,7 @@ func (c *MainAdminController) ShowAdminIndex() {
 	c.Layout = "admin_layout.html"
 	c.TplName = "admin_index.html"
 }
+
+func (c *MainAdminController) HandleLogout(){
+
+}

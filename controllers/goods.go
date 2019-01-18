@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"math"
 	"mb2c/models"
 
 	"github.com/astaxie/beego"
@@ -68,6 +69,8 @@ func (c *GoodsController) ShowIndex() {
 	c.Data["advsOfPromotion"] = advsOfPromotion
 	c.Data["goodsList"] = goodsList
 
+	//c.TplName = "index.html"
+	//	c.Layout = "layout.html"
 	c.TplName = "index.html"
 }
 func (c *GoodsController) ShowGoodsDetail() {
@@ -133,27 +136,64 @@ func (c *GoodsController) ShowGoodsListByType() {
 		beego.Error("ShowGoodsListByType:: fail", err)
 		return
 	}
+	curPage, err := c.GetInt("page")
+	if err != nil {
+		curPage = 1
+	}
+
 	var goodsType models.GoodsType
 	var goodsSKUs []*models.GoodsSKU
 	o := orm.NewOrm()
 	goodsType.Id = typeId
 	o.Read(&goodsType)
-	o.QueryTable("GoodsSKU").RelatedSel("GoodsType").Filter("GoodsType", goodsType).All(&goodsSKUs)
+
+	pageSize := 2
+	start := (curPage - 1) * pageSize
+
+	qs := o.QueryTable("GoodsSKU").RelatedSel("GoodsType").Filter("GoodsType__Id", goodsType.Id)
+	count, err := qs.Count()
+	qs.Limit(pageSize, start).All(&goodsSKUs)
+	pageCount := math.Ceil(float64(count) / float64(pageSize))
 
 	c.Data["img_url"] = beego.AppConfig.String("imgURL::img_url")
 	c.Data["goodsSKUs"] = goodsSKUs
-	beego.Error("goodsSKUs", goodsSKUs)
 	c.Data["newGoodsRecommend"] = c.GetNewGoodsByRecommend(typeId)
+	c.Data["typeId"] = typeId
+
+	//分页 一个页数的切片
+	pages := PageDecorate(int(pageCount), int(curPage))
+	c.Data["curPage"] = curPage
+	prePage := curPage - 1
+	nextPage := curPage + 1
+
+	c.Data["prePage"] = prePage
+	c.Data["nextPage"] = nextPage
+	c.Data["pages"] = pages
+	beego.Error("typeId=", typeId)
+
 	c.TplName = "list.html"
 }
 
-//=====admin=====
-func (c *GoodsController) ShowAddGoods() {
-	c.Layout = "admin_layout.html"
-	c.TplName = "admin_add.html"
-}
-func (c *GoodsController) HandleAddGoods() {
-	//goodName := c.GetString("goodsName")
-	//client, _ := fdfs_client.NewFdfsClient("")
+//PageDecorate 分页装饰列表
+func PageDecorate(pageCount int, curPage int) []int {
+	curPageLen := 5
+	var curPageList []int
+	beego.Info("pageCount=", pageCount)
+	beego.Info("curPage=", curPage)
 
+	//处在第几个片中（一个片是5个）
+	inSliceNo := math.Ceil(float64(curPage) / float64(curPageLen))
+	curCeil := int(inSliceNo) * curPageLen
+	start := curCeil - 5
+	if start <= 0 {
+		start = 1
+	}
+
+	for i := start; i <= curPageLen; i++ {
+		if i <= pageCount {
+			curPageList = append(curPageList, i)
+		}
+	}
+
+	return curPageList
 }

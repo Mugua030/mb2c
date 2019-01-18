@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-	<title>天天生鲜-首页</title>
+	<title>mb2c</title>
 	<link rel="stylesheet" type="text/css" href="/static/css/reset.css">
 	<link rel="stylesheet" type="text/css" href="/static/css/main.css">
 	<script type="text/javascript" src="/static/js/jquery-1.12.4.min.js"></script>
@@ -12,7 +12,7 @@
 <body>
 	<div class="header_con">
 		<div class="header">
-			<div class="welcome fl">欢迎来到天天生鲜!</div>
+			<div class="welcome fl">mbc2</div>
 			<div class="fr">
 				{{if compare .username ""}}
 				<div class="login_btn fl">
@@ -31,7 +31,7 @@
 					<span>|</span>
 					<a href="/ucenter/userinfo">用户中心</a>
 					<span>|</span>
-					<a href="cart.html">我的购物车</a>
+					<a href="/cart/list">我的购物车</a>
 					<span>|</span>
 					<a href="/ucenter/user_center_order.html">我的订单</a>
 				</div>
@@ -39,13 +39,30 @@
 		</div>		
 	</div>
 	<div class="search_bar clearfix">
-		<a href="index.html" class="logo fl"><img src="/static/img/xxlog.jpeg" width="58" height="58"></a>
+		<a href="/index" class="logo fl"><img src="/static/img/logo02.png" width="58" height="58"></a>
 		<div class="sub_page_name fl">|&nbsp;&nbsp;&nbsp;&nbsp;用户中心</div>
 		<div class="search_con fr">
 			<input type="text" class="input_text fl" name="" placeholder="搜索商品">
 			<input type="button" class="input_btn fr" name="" value="搜索">
 		</div>		
+		<div class="guest_cart fr">
+			<a href="/cart/list" class="cart_name fl">我的购物车</a>
+			<div class="goods_count fl" id="show_count">1</div>
+		</div>
 	</div>
+	<div class="navbar_con">
+		<div class="navbar">
+			<h1 class="fl">全部商品分类</h1>
+			<ul class="navlist fl">
+				<li><a href="">首页</a></li>
+				<li class="interval">|</li>
+				<li><a href="">手机生鲜</a></li>
+				<li class="interval">|</li>
+				<li><a href="">抽奖</a></li>
+			</ul>
+		</div>
+	</div>
+
 
 	{{.LayoutContent}}
 
@@ -62,7 +79,6 @@
 		<p>CopyRight © 2019 上海xxx技术有限公司 All Rights Reserved</p>
 		<p>电话：010-8888888    沪ICP备*******8号</p>
 	</div>
-	<script type="text/javascript" src="js/slideshow.js"></script>
 	<script type="text/javascript">
 		BCSlideshow('focuspic');
 		var oFruit = document.getElementById('fruit_more');
